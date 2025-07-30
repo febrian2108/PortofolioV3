@@ -3,13 +3,16 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ExternalLink, Github } from 'lucide-react'
+import { ExternalLink, Github, Eye } from 'lucide-react'
 import { getProjects } from '../services/supabase'
+import ProjectDetailModal from '../components/ProjectDetailModal'
 
 const Projects = () => {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('All')
+  const [selectedProject, setSelectedProject] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     fetchProjects()
@@ -28,6 +31,16 @@ const Projects = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const openProjectDetail = (project) => {
+    setSelectedProject(project)
+    setIsModalOpen(true)
+  }
+
+  const closeProjectDetail = () => {
+    setIsModalOpen(false)
+    setSelectedProject(null)
   }
 
   const displayProjects = projects
@@ -292,6 +305,19 @@ const Projects = () => {
                           </motion.div>
                           
                           <div className="flex space-x-4 pt-4">
+                            <motion.div
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <Button 
+                                variant="default" 
+                                size="sm" 
+                                onClick={() => openProjectDetail(project)}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </Button>
+                            </motion.div>
                             {project.github_url && (
                               <motion.div
                                 whileHover={{ scale: 1.05 }}
@@ -449,6 +475,18 @@ const Projects = () => {
                       </motion.div>
                       
                       <div className="flex space-x-2 pt-2">
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            onClick={() => openProjectDetail(project)}
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                        </motion.div>
                         {project.github_url && (
                           <motion.div
                             whileHover={{ scale: 1.1 }}
@@ -482,6 +520,13 @@ const Projects = () => {
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Project Detail Modal */}
+      <ProjectDetailModal
+        project={selectedProject}
+        isOpen={isModalOpen}
+        onClose={closeProjectDetail}
+      />
     </div>
   )
 }

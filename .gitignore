@@ -7,6 +7,7 @@
 
 # testing
 /coverage
+sql-updates.sql
 
 # database
 supabase-setup.sql

@@ -3,14 +3,13 @@ import { useAuth } from '../context/SupabaseContext'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Plus, Edit, Trash2, User, LogOut, Save, X } from 'lucide-react'
+import { Plus, Edit, Trash2, User, LogOut, Eye, ExternalLink, Github } from 'lucide-react'
+import ProjectForm from '../components/ProjectForm'
+import SkillForm from '../components/SkillForm'
 import {
   getProjects,
   createProject,
@@ -30,19 +29,13 @@ const Dashboard = () => {
   const [error, setError] = useState('')
   const [editingProject, setEditingProject] = useState(null)
   const [editingSkill, setEditingSkill] = useState(null)
-  const [newProject, setNewProject] = useState({
-    title: '',
-    description: '',
-    technologies: '',
-    github_url: '',
-    link_url: '',
-    image: ''
-  })
+  const [showProjectForm, setShowProjectForm] = useState(false)
+  const [showSkillForm, setShowSkillForm] = useState(false)
   const [newSkill, setNewSkill] = useState({
     name: '',
-    category: '',
-    level: 'Beginner',
-    description: ''
+    skill_category: 'Other',
+    description: '',
+    icon_url: ''
   })
 
   useEffect(() => {
@@ -75,13 +68,10 @@ const Dashboard = () => {
     }
   }
 
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (projectData) => {
     try {
-      const technologies = newProject.technologies.split(',').map((tech) => tech.trim())
-
       const { data, error } = await createProject({
-        ...newProject,
-        technologies,
+        ...projectData,
         user_id: user.id
       })
 
@@ -89,28 +79,21 @@ const Dashboard = () => {
         setError(error.message)
       } else {
         setProjects([...projects, data[0]])
-        setNewProject({
-          title: '',
-          description: '',
-          technologies: '',
-          github_url: '',
-          link_url: '',
-          image: ''
-        })
+        setShowProjectForm(false)
       }
     } catch (err) {
       setError('Failed to create project')
     }
   }
 
-  const handleUpdateProject = async (id, updates) => {
+  const handleUpdateProject = async (projectData) => {
     try {
-      const { data, error } = await updateProject(id, updates)
+      const { data, error } = await updateProject(editingProject.id, projectData)
 
       if (error) {
         setError(error.message)
       } else {
-        setProjects(projects.map(p => p.id === id ? data[0] : p))
+        setProjects(projects.map(p => p.id === editingProject.id ? data[0] : p))
         setEditingProject(null)
       }
     } catch (err) {
@@ -132,10 +115,10 @@ const Dashboard = () => {
     }
   }
 
-  const handleCreateSkill = async () => {
+  const handleCreateSkill = async (skillData) => {
     try {
       const { data, error } = await createSkill({
-        ...newSkill,
+        ...skillData,
         user_id: user.id
       })
 
@@ -143,26 +126,21 @@ const Dashboard = () => {
         setError(error.message)
       } else {
         setSkills([...skills, data[0]])
-        setNewSkill({
-          name: '',
-          category: '',
-          level: 'Beginner',
-          description: ''
-        })
+        setShowSkillForm(false)
       }
     } catch (err) {
       setError('Failed to create skill')
     }
   }
 
-  const handleUpdateSkill = async (id, updates) => {
+  const handleUpdateSkill = async (skillData) => {
     try {
-      const { data, error } = await updateSkill(id, updates)
+      const { data, error } = await updateSkill(editingSkill.id, skillData)
 
       if (error) {
         setError(error.message)
       } else {
-        setSkills(skills.map(s => s.id === id ? data[0] : s))
+        setSkills(skills.map(s => s.id === editingSkill.id ? data[0] : s))
         setEditingSkill(null)
       }
     } catch (err) {
@@ -242,123 +220,146 @@ const Dashboard = () => {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Projects</CardTitle>
-                  <Dialog>
+                  <CardTitle>Projects ({projects.length})</CardTitle>
+                  <Dialog open={showProjectForm} onOpenChange={setShowProjectForm}>
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button onClick={() => setShowProjectForm(true)}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add Project
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Add New Project</DialogTitle>
                       </DialogHeader>
-                      <div className="space-y-4 box-border">
-                        <div>
-                          <Label htmlFor="title">Title</Label>
-                          <Input
-                            id="title"
-                            value={newProject.title}
-                            onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="description">Description</Label>
-                          <Textarea
-                            id="description"
-                            value={newProject.description}
-                            onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="technologies">Technologies</Label>
-                          <Input
-                            id="technologies"
-                            value={newProject.technologies}
-                            onChange={(e) => setNewProject({ ...newProject, technologies: e.target.value })}
-                            placeholder="React, Node.js, MongoDB"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="github_url">GitHub URL</Label>
-                          <Input
-                            id="github_url"
-                            value={newProject.github_url}
-                            onChange={(e) => setNewProject({ ...newProject, github_url: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="link_url">Link URL</Label>
-                          <Input
-                            id="link_url"
-                            value={newProject.link_url}
-                            onChange={(e) => setNewProject({ ...newProject, link_url: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="image">Upload Image</Label>
-                          <Input
-                            id="image"
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                const imageUrl = URL.createObjectURL(file);
-                                setNewProject({ ...newProject, image: imageUrl });
-                              }
-                            }}
-                          />
-                        </div>
-
-                        <Button onClick={handleCreateProject} className="w-full">
-                          <Save className="h-4 w-4 mr-2" />
-                          Save Project
-                        </Button>
-                      </div>
+                      <ProjectForm
+                        onSave={handleCreateProject}
+                        onCancel={() => setShowProjectForm(false)}
+                      />
                     </DialogContent>
                   </Dialog>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4">
+                <div className="grid gap-6">
                   {projects.map((project) => (
-                    <div key={project.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
+                    <div key={project.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg">{project.title}</h3>
-                          <p className="text-gray-600 mt-1">{project.description}</p>
-                          <div className="flex flex-wrap gap-2 mt-2">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-xl">{project.title}</h3>
+                            {project.featured && (
+                              <Badge variant="default">Featured</Badge>
+                            )}
+                            {project.project_status && (
+                              <Badge variant="outline">{project.project_status}</Badge>
+                            )}
+                          </div>
+                          <p className="text-gray-600 mb-3">{project.description}</p>
+                          
+                          {project.long_description && (
+                            <p className="text-sm text-gray-500 mb-3 line-clamp-2">
+                              {project.long_description}
+                            </p>
+                          )}
+
+                          <div className="flex flex-wrap gap-2 mb-3">
                             {project.technologies?.map((tech, index) => (
                               <Badge key={index} variant="secondary">
                                 {tech.trim()}
                               </Badge>
                             ))}
                           </div>
+
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            {project.category && (
+                              <span>Category: {project.category}</span>
+                            )}
+                            {project.client_name && (
+                              <span>Client: {project.client_name}</span>
+                            )}
+                            {project.start_date && (
+                              <span>Started: {new Date(project.start_date).toLocaleDateString()}</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex space-x-2">
+
+                        <div className="flex flex-col space-y-2 ml-4">
+                          {project.github_url && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={project.github_url} target="_blank" rel="noopener noreferrer">
+                                <Github className="h-4 w-4 mr-1" />
+                                Code
+                              </a>
+                            </Button>
+                          )}
+                          {project.link_url && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={project.link_url} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-4 w-4 mr-1" />
+                                Live
+                              </a>
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setEditingProject(project)}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleDeleteProject(project.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
                           </Button>
                         </div>
                       </div>
+
+                      {project.image && (
+                        <div className="mt-4">
+                          <img 
+                            src={project.image} 
+                            alt={project.title}
+                            className="w-full h-48 object-cover rounded-lg"
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
+
+                  {projects.length === 0 && (
+                    <div className="text-center py-12">
+                      <p className="text-gray-500 mb-4">No projects yet</p>
+                      <Button onClick={() => setShowProjectForm(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Your First Project
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
+
+            {/* Edit Project Dialog */}
+            {editingProject && (
+              <Dialog open={!!editingProject} onOpenChange={() => setEditingProject(null)}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Edit Project</DialogTitle>
+                  </DialogHeader>
+                  <ProjectForm
+                    project={editingProject}
+                    onSave={handleUpdateProject}
+                    onCancel={() => setEditingProject(null)}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
           </TabsContent>
 
           {/* Skills Tab */}
@@ -366,88 +367,119 @@ const Dashboard = () => {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Skills</CardTitle>
-                  <Dialog>
+                  <CardTitle>Skills ({skills.length})</CardTitle>
+                  <Dialog open={showSkillForm} onOpenChange={setShowSkillForm}>
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button onClick={() => setShowSkillForm(true)}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add Skill
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-2xl">
                       <DialogHeader>
                         <DialogTitle>Add New Skill</DialogTitle>
                       </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="skill-name">Name</Label>
-                          <Input
-                            id="skill-name"
-                            value={newSkill.name}
-                            onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="category">Category</Label>
-                          <Input
-                            id="category"
-                            value={newSkill.category}
-                            onChange={(e) => setNewSkill({ ...newSkill, category: e.target.value })}
-                            placeholder="Frontend, Backend, Database"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="skill-description">Description</Label>
-                          <Textarea
-                            id="skill-description"
-                            value={newSkill.description}
-                            onChange={(e) => setNewSkill({ ...newSkill, description: e.target.value })}
-                          />
-                        </div>
-                        <Button onClick={handleCreateSkill} className="w-full">
-                          <Save className="h-4 w-4 mr-2" />
-                          Save Skill
-                        </Button>
-                      </div>
+                      <SkillForm
+                        onSave={async (skillData) => {
+                          await handleCreateSkill(skillData)
+                        }}
+                        onCancel={() => setShowSkillForm(false)}
+                      />
                     </DialogContent>
                   </Dialog>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4">
-                  {skills.map((skill) => (
-                    <div key={skill.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg">{skill.name}</h3>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant="outline">{skill.category}</Badge>
-                            <Badge>{skill.level}</Badge>
+                {/* Skills grouped by category */}
+                {Object.entries(
+                  skills.reduce((acc, skill) => {
+                    const category = skill.skill_category || 'Other'
+                    if (!acc[category]) acc[category] = []
+                    acc[category].push(skill)
+                    return acc
+                  }, {})
+                ).map(([category, categorySkills]) => (
+                  <div key={category} className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      {category === 'Web Development' && '🌐'}
+                      {category === 'Mobile Development' && '📱'}
+                      {category === 'AI/ML & Data Science' && '🤖'}
+                      {category === 'Backend Development' && '⚙️'}
+                      {category === 'Database & Cloud' && '☁️'}
+                      {category === 'DevOps & Tools' && '🛠️'}
+                      {category === 'Other' && '📋'}
+                      {category} ({categorySkills.length})
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {categorySkills.map((skill) => (
+                        <div key={skill.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              {skill.icon_url && (
+                                <img 
+                                  src={skill.icon_url} 
+                                  alt={skill.name}
+                                  className="w-6 h-6 object-contain"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none'
+                                  }}
+                                />
+                              )}
+                              <h4 className="font-semibold">{skill.name}</h4>
+                            </div>
+                            <div className="flex space-x-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setEditingSkill(skill)}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteSkill(skill.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
-                          <p className="text-gray-600 mt-2">{skill.description}</p>
+                          {skill.description && (
+                            <p className="text-sm text-gray-600">{skill.description}</p>
+                          )}
                         </div>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingSkill(skill)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteSkill(skill.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+
+                {skills.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500 mb-4">No skills yet</p>
+                    <Button onClick={() => setShowSkillForm(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Skill
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
+
+            {/* Edit Skill Dialog */}
+            {editingSkill && (
+              <Dialog open={!!editingSkill} onOpenChange={() => setEditingSkill(null)}>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Edit Skill</DialogTitle>
+                  </DialogHeader>
+                  <SkillForm
+                    skill={editingSkill}
+                    onSave={handleUpdateSkill}
+                    onCancel={() => setEditingSkill(null)}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
           </TabsContent>
         </Tabs>
       </div>
