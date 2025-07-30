@@ -77,7 +77,7 @@ const Dashboard = () => {
 
   const handleCreateProject = async () => {
     try {
-      const technologies = newProject.technologies.split(',').map((tech) => tech.trim() )
+      const technologies = newProject.technologies.split(',').map((tech) => tech.trim())
 
       const { data, error } = await createProject({
         ...newProject,
@@ -297,12 +297,18 @@ const Dashboard = () => {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="image">Image URL</Label>
+                          <Label htmlFor="image">Upload Image</Label>
                           <Input
                             id="image"
-                            value={newProject.image}
-                            onChange={(e) => setNewProject({ ...newProject, image: e.target.value })}
-                            placeholder="https://example.com/image.jpg"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const imageUrl = URL.createObjectURL(file);
+                                setNewProject({ ...newProject, image: imageUrl });
+                              }
+                            }}
                           />
                         </div>
 
