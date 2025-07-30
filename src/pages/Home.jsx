@@ -1,5 +1,5 @@
-import { Suspense } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { Suspense, useRef } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Environment, useGLTF } from '@react-three/drei'
 import { motion } from 'framer-motion'
 import CompanyLogos from '../components/CompanyLogos'
@@ -11,7 +11,16 @@ import { ArrowRight, Github, Linkedin, Mail, Download, Code } from 'lucide-react
 
 const Model = () => {
   const gltf = useGLTF('/logo/coba-coba1.glb')
-  return <primitive object={gltf.scene} scale={0.5} />
+  const modelRef = useRef()
+  
+  // Animate horizontal rotation (Y-axis)
+  useFrame((state, delta) => {
+    if (modelRef.current) {
+      modelRef.current.rotation.y += delta * 0.5 // Horizontal rotation speed
+    }
+  })
+  
+  return <primitive ref={modelRef} object={gltf.scene} scale={0.5} />
 }
 
 const Home = () => {
@@ -184,11 +193,18 @@ const Home = () => {
 
           {/* Right Content - 3D Scene */}
           <div className="w-screen h-screen">
-            <Canvas camera={{ position: [25, 10, 10], fov: 20 }}>
+            <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
               <Suspense fallback={null}>
                 <Model scale={2} />
-                <OrbitControls enableZoom={true} />
+                <OrbitControls 
+                  enableZoom={false} 
+                  enablePan={false}
+                  enableRotate={false}
+                  autoRotate={false}
+                />
                 <Environment preset="studio" />
+                <ambientLight intensity={0.5} />
+                <directionalLight position={[10, 10, 5]} intensity={1} />
               </Suspense>
             </Canvas>
           </div>
